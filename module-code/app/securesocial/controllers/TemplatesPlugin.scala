@@ -23,6 +23,7 @@ import securesocial.core.{Identity, SecuredRequest}
 import play.api.data.Form
 import securesocial.controllers.Registration.RegistrationInfo
 import securesocial.controllers.PasswordChange.ChangeInfo
+import securesocial.controllers.registration.FullRegistration.FullRegistrationInfo 
 
 
 /**
@@ -52,6 +53,15 @@ trait TemplatesPlugin extends Plugin  with Controller {
    * @return
    */
   def getSignUpPage(form: Form[RegistrationInfo], token: String)(implicit request: Request[AnyContent]): Html
+
+  /**
+   * Returns the html for the full signup page
+   *
+   * @param request
+   * @tparam A
+   * @return
+   */
+  def getFullSignUpPage(form: Form[FullRegistrationInfo])(implicit request: Request[AnyContent]): Html = ??? // Not abstract, for the sake of backward compatability 
 
   /**
    * Returns the html for the start signup page
@@ -102,6 +112,15 @@ trait TemplatesPlugin extends Plugin  with Controller {
    * @return a String with the text and/or html body for the email
    */
   def getSignUpEmail(token: String)(implicit request: RequestHeader): (Option[Txt], Option[Html])
+
+   /**
+   * Returns the email sent when a user ended the sign up process
+   *
+   * @param token the token used to identify the request
+   * @param request the current http request
+   * @return a String with the text and/or html body for the email
+   */
+  def getSignUpVerificationEmail(token: String)(implicit request: RequestHeader): (Option[Txt], Option[Html]) = ??? // Not abstract, for the sake of backward compatability
 
   /**
    * Returns the email sent when the user is already registered
@@ -167,6 +186,10 @@ class DefaultTemplatesPlugin(application: Application) extends TemplatesPlugin {
   override def getSignUpPage(form: Form[RegistrationInfo], token: String)(implicit request: Request[AnyContent]): Html = {
     securesocial.views.html.Registration.signUp(form, token)
   }
+  
+  override def getFullSignUpPage(form: Form[FullRegistrationInfo])(implicit request: Request[AnyContent]): Html = {
+    securesocial.views.html.Registration.fullSignUp(form)
+  }
 
   override def getStartSignUpPage(form: Form[String])(implicit request: Request[AnyContent]): Html = {
     securesocial.views.html.Registration.startSignUp(form)
@@ -190,6 +213,10 @@ class DefaultTemplatesPlugin(application: Application) extends TemplatesPlugin {
 
   def getSignUpEmail(token: String)(implicit request: RequestHeader): (Option[Txt], Option[Html]) = {
     (None, Some(securesocial.views.html.mails.signUpEmail(token)))
+  }
+
+  override def getSignUpVerificationEmail(token: String)(implicit request: RequestHeader): (Option[Txt], Option[Html])= {
+    (None, Some(securesocial.views.html.mails.signUpVerificationEmail(token)))
   }
 
   def getAlreadyRegisteredEmail(user: Identity)(implicit request: RequestHeader): (Option[Txt], Option[Html]) = {
