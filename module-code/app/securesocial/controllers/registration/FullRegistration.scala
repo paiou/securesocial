@@ -57,6 +57,8 @@ object FullRegistration extends Controller with securesocial.core.SecureSocial {
     Success,
     SignUpDone,
     onHandleStartSignUpGoTo,
+    onHandleSignUpGoTo,
+    onHandleSignUpGoToOpt,
     ThankYouCheckEmail,
     TokenDurationKey,
     DefaultDuration,
@@ -65,8 +67,7 @@ object FullRegistration extends Controller with securesocial.core.SecureSocial {
     createToken,
     executeForToken
   }
-
-  val NotActive = "NotActive"
+  
   val EmailAlreadyTaken = "securesocial.signup.emailAlreadyTaken"
 
   case class FullRegistrationInfo(userName: Option[String], firstName: String, lastName: String, email: String, password: String)
@@ -142,7 +143,7 @@ object FullRegistration extends Controller with securesocial.core.SecureSocial {
                 info.firstName,
                 info.lastName,
                 "%s %s".format(info.firstName, info.lastName),
-                NotActive,
+                State.NotValidated,
                 Some(info.email),
                 GravatarHelper.avatarFor(info.email),
                 AuthenticationMethod.UserPassword,
@@ -150,7 +151,7 @@ object FullRegistration extends Controller with securesocial.core.SecureSocial {
               UserService.save(user)
               Events.fire(new SignUpEvent(user)).getOrElse(session)
               val token = createToken(info.email, isSignUp = true)
-              Mailer.sendVerificationEmail(info.email, token._1)
+              Mailer.sendVerificationEmail(user, token._1)
             case Some(alreadyRegisteredUser) =>
               Mailer.sendAlreadyRegisteredEmail(alreadyRegisteredUser)
           }
@@ -163,12 +164,21 @@ object FullRegistration extends Controller with securesocial.core.SecureSocial {
 
   def signUpVerification(token: String) = UserAwareAction { implicit request =>
     if (registrationEnabled) {
-      def markAsActive(user: Identity) {
-        val updated = UserService.save(SocialUser(user).copy(state = "Active"))
+ 
+      def markAsActive(user: Identity) = {
+        val updated = UserService.save(SocialUser(user).copy(state = State.ValidEmail))
         Mailer.sendWelcomeEmail(updated)
         val eventSession = Events.fire(new SignUpEvent(updated)).getOrElse(session)
-        ProviderController.completeAuthentication(updated, eventSession).flashing(Success -> Messages(SignUpDone))
+        if ( UsernamePasswordProvider.signupSkipLogin ) {
+          val authResult = ProviderController.completeAuthentication(updated, eventSession).flashing(Success -> Messages(SignUpDone))
+          onHandleSignUpGoToOpt.map { targetUrl =>
+            authResult.withHeaders(LOCATION -> targetUrl)
+          } getOrElse authResult
+        } else {
+          Redirect(onHandleSignUpGoTo).flashing(Success -> Messages(SignUpDone)).withSession(eventSession)
+        }
       }
+
       executeForToken(token, true, { t =>
         val email = t.email
         val providerId = t.uuid
@@ -176,10 +186,8 @@ object FullRegistration extends Controller with securesocial.core.SecureSocial {
         (userFromToken, request.user) match {
           case (Some(user), Some(user2)) if user.identityId == user2.identityId =>
             markAsActive(user)
-            Redirect(landingUrl)
           case (Some(user), None) =>
             markAsActive(user)
-            Redirect(RoutesHelper.login().url)
           case _ =>
             Unauthorized("Not Authorized Page")
         }

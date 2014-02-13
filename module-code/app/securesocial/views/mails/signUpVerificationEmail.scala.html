@@ -1,10 +1,11 @@
-@(token: String)(implicit request: RequestHeader)
+@(user: securesocial.core.Identity, token: String)(implicit request: RequestHeader, lang: Lang)
 @import securesocial.core.IdentityProvider
-@import securesocial.core.providers.UsernamePasswordProvider
 <html>
 <body>
-<p>Hello,</p>
+<p>Hello @user.firstName,</p>
 
-<p>Please follow this <a href="@securesocial.core.providers.utils.RoutesHelper.signUpVerification(token).absoluteURL(IdentityProvider.sslEnabled)">link</a> to verify your email.</p>
+<p>Please follow this
+    <a href="@securesocial.core.providers.utils.RoutesHelper.signUpVerification(token).absoluteURL(IdentityProvider.sslEnabled)">link</a> to verify your email.
+</p>
 </body>
 </html>

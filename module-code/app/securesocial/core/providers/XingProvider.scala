@@ -53,7 +53,8 @@ class XingProvider(application: Application) extends OAuth1Provider(application)
         firstName = firstName,
         lastName = lastName,
         avatarUrl = Some(profileImage),
-        email = Some(email)
+        email = Some(email),
+        state = State.ValidEmail
       )
 
     } catch {

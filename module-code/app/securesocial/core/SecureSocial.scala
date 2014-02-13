@@ -108,23 +108,22 @@ trait SecureSocial extends Controller {
                               block: SecuredRequest[A] => Future[SimpleResult]): Future[SimpleResult] =
     {
       implicit val req = request
-      val user = for (
-        authenticator <- SecureSocial.authenticatorFromRequest;
+      val result = for (
+        authenticator <- SecureSocial.authenticatorFromRequest ;
         user <- UserService.find(authenticator.identityId)
       ) yield {
         touch(authenticator)
-        user
-      }
-
-      val result = user.filter(_.state == "Active").map { user =>
-        if (authorize.isEmpty || authorize.get.isAuthorized(user)) {
+        val hasMinAccessLevel = user.state >= SecureSocial.minAccessLevel
+        if (hasMinAccessLevel && (authorize.isEmpty || authorize.get.isAuthorized(user))) {
           block(SecuredRequest(user, request))
         } else {
           Future.successful {
             if ( ajaxCall ) {
               ajaxCallNotAuthorized(request)
             } else {
+              val errorMessageKey = if (hasMinAccessLevel) "securesocial.notAuthorized.message" else "securesocial.verificationRequired"
               Redirect(RoutesHelper.notAuthorized.absoluteURL(IdentityProvider.sslEnabled))
+                .flashing("error" -> Messages(errorMessageKey))
             }
           }
         }
@@ -132,14 +131,13 @@ trait SecureSocial extends Controller {
 
       result.getOrElse({
         if ( Logger.isDebugEnabled ) {
-          Logger.debug("[securesocial] anonymous (or non-verified) user trying to access : '%s'".format(request.uri))
+          Logger.debug("[securesocial] anonymous user trying to access : '%s'".format(request.uri))
         }
         val response = if ( ajaxCall ) {
           ajaxCallNotAuthenticated(request)
         } else {
-          val errorMessageKey: String = user.map(_=>"securesocial.verificationRequired").getOrElse("securesocial.loginRequired")
           Redirect(RoutesHelper.login().absoluteURL(IdentityProvider.sslEnabled))
-            .flashing("error" -> Messages(errorMessageKey))
+            .flashing("error" -> Messages("securesocial.loginRequired"))
             .withSession(session + (SecureSocial.OriginalUrlKey -> request.uri)
           )
         }
@@ -262,4 +260,10 @@ object SecureSocial {
     import play.api.Play
     Play.current.configuration.getBoolean("securesocial.enableRefererAsOriginalUrl").getOrElse(false)
   }
+  
+  val minAccessLevel = {
+    import play.api.Play
+    State.withName(Play.current.configuration.getString("securesocial.minAccessLevel").getOrElse("ValidIdentity"))
+  }
+  
 }

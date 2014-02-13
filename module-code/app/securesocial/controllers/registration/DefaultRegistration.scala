@@ -54,7 +54,6 @@ object DefaultRegistration extends Controller {
   val UserName = "userName"
   val FirstName = "firstName"
   val LastName = "lastName"
-  val Active = "Active"
   val Password = "password"
   val Password1 = "password1"
   val Password2 = "password2"
@@ -71,6 +70,7 @@ object DefaultRegistration extends Controller {
   val onHandleStartSignUpGoTo = stringConfig("securesocial.onStartSignUpGoTo", RoutesHelper.login().url)
   /** The redirect target of the handleSignUp action. */
   val onHandleSignUpGoTo = stringConfig("securesocial.onSignUpGoTo", RoutesHelper.login().url)
+  val onHandleSignUpGoToOpt = Play.current.configuration.getString("securesocial.onSignUpGoTo")
   /** The redirect target of the handleStartResetPassword action. */
   val onHandleStartResetPasswordGoTo = stringConfig("securesocial.onStartResetPasswordGoTo", RoutesHelper.login().url)
   /** The redirect target of the handleResetPassword action. */
@@ -235,7 +235,7 @@ object DefaultRegistration extends Controller {
               info.firstName,
               info.lastName,
               "%s %s".format(info.firstName, info.lastName),
-              Active,
+              State.ValidEmail,
               Some(t.email),
               GravatarHelper.avatarFor(t.email),
               AuthenticationMethod.UserPassword,
@@ -248,7 +248,10 @@ object DefaultRegistration extends Controller {
             }
             val eventSession = Events.fire(new SignUpEvent(user)).getOrElse(session)
             if ( UsernamePasswordProvider.signupSkipLogin ) {
-              ProviderController.completeAuthentication(user, eventSession).flashing(Success -> Messages(SignUpDone))
+              val authResult = ProviderController.completeAuthentication(user, eventSession).flashing(Success -> Messages(SignUpDone))
+              onHandleSignUpGoToOpt.map { targetUrl =>
+                authResult.withHeaders(LOCATION -> targetUrl)
+              } getOrElse authResult
             } else {
               Redirect(onHandleSignUpGoTo).flashing(Success -> Messages(SignUpDone)).withSession(eventSession)
             }

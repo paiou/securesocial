@@ -51,9 +51,9 @@ object Mailer {
     sendEmail(Messages(SignUpEmailSubject), to, txtAndHtml)
   }
   
-  def sendVerificationEmail(to: String, token: String)(implicit request: RequestHeader)  {
-    val txtAndHtml = use[TemplatesPlugin].getSignUpVerificationEmail(token)
-    sendEmail(Messages(SignUpVerificationSubject), to, txtAndHtml)
+  def sendVerificationEmail(user: Identity, token: String)(implicit request: RequestHeader)  {
+    val txtAndHtml = use[TemplatesPlugin].getSignUpVerificationEmail(user, token)
+    sendEmail(Messages(SignUpVerificationSubject), user.email.get, txtAndHtml)
   }
 
   def sendWelcomeEmail(user: Identity)(implicit request: RequestHeader, lang: Lang) {

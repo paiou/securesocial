@@ -64,7 +64,8 @@ class LinkedInProvider(application: Application) extends OAuth1Provider(applicat
              lastName = lastName,
              fullName= fullName,
              avatarUrl = avatarUrl,
-             email = emailAddress
+             email = emailAddress,
+             state = emailAddress map (_ => State.ValidEmail) getOrElse State.ValidIdentity
            )
          }
        }

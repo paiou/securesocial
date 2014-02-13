@@ -83,7 +83,8 @@ class GitHubProvider(application: Application) extends OAuth2Provider(applicatio
             identityId = IdentityId(userId.toString, id),
             fullName = displayName,
             avatarUrl = avatarUrl,
-            email = email
+            email = email,
+            state = email map (_ => State.ValidEmail) getOrElse State.ValidIdentity
           )
         }
       }

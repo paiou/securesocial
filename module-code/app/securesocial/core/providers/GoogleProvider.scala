@@ -67,7 +67,8 @@ class GoogleProvider(application: Application) extends OAuth2Provider(applicatio
             lastName = lastName.getOrElse(""),
             fullName = fullName.getOrElse(""),
             avatarUrl = avatarUrl,
-            email = email
+            email = email,
+            state = email map (_ => State.ValidEmail) getOrElse State.ValidIdentity
           )
       }
     } catch {

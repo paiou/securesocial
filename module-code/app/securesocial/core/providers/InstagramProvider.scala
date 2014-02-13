@@ -69,7 +69,8 @@ class InstagramProvider(application: Application) extends OAuth2Provider(applica
           user.copy(
             identityId = IdentityId(userId , id),
             fullName = fullName,
-            avatarUrl = avatarUrl
+            avatarUrl = avatarUrl,
+            state = State.ValidIdentity
           )
         }
       }

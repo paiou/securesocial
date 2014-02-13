@@ -80,7 +80,8 @@ class FoursquareProvider(application: Application) extends OAuth2Provider(applic
             firstName = firstName,
             fullName = firstName + " " + lastName,
             avatarUrl = for (prefix <- avatarUrlPart1; postfix <- avatarUrlPart2) yield prefix + "100x100" + postfix,
-            email = email
+            email = email,
+            state = email map (_ => State.ValidEmail) getOrElse State.ValidIdentity
           )
         }
       }
