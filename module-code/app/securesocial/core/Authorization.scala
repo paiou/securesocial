@@ -31,3 +31,9 @@ trait Authorization {
    */
   def isAuthorized(user: Identity): Boolean
 }
+
+case class WithState(minState: State.State) extends Authorization {
+  def isAuthorized(user: Identity) = {
+    user.state >= minState
+  }
+}

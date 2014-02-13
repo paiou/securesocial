@@ -76,7 +76,7 @@ class FacebookProvider(application: Application) extends OAuth2Provider(applicat
           val lastName = ( me \ LastName).as[String]
           val picture = (me \ Picture)
           val avatarUrl = (picture \ Data \ Url).asOpt[String]
-          val email = ( me \ Email).as[String]
+          val email = ( me \ Email).asOpt[String]
 
           user.copy(
             identityId = IdentityId(userId, id),
@@ -84,7 +84,8 @@ class FacebookProvider(application: Application) extends OAuth2Provider(applicat
             lastName = lastName,
             fullName = name,
             avatarUrl = avatarUrl,
-            email = Some(email)
+            email = email,
+            state = email map (_ => State.ValidEmail) getOrElse State.ValidIdentity
           )
       }
     } catch {

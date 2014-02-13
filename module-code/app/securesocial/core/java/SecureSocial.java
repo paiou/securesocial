@@ -210,8 +210,8 @@ public class SecureSocial {
                     }
                 } else {
                     Authorization authorization = configuration.authorization().newInstance();
-
-                    if ( authorization.isAuthorized(user, configuration.params()) ) {
+                    boolean hasMinAccessLevel = user.state().id() >= SecureSocial$.MODULE$.minAccessLevel().id();
+                    if ( hasMinAccessLevel && authorization.isAuthorized(user, configuration.params()) ) {
                         ctx.args.put(USER_KEY, user);
                         touch(authenticator);
                         return delegate.call(ctx);

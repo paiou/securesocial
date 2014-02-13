@@ -46,7 +46,8 @@ class VkProvider(application: Application) extends OAuth2Provider(application) {
             lastName = lastName,
             fullName = firstName + " " + lastName,
             avatarUrl = avatarUrl,
-            email = None
+            email = None,
+            state = State.ValidIdentity
           )
       }
     } catch {

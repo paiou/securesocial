@@ -54,6 +54,7 @@ securesocial.notAuthorized.message=Vous n''êtes pas autorisé à accéder à ce
 
 #
 securesocial.loginRequired=Vous devez être connecté pour accéder à cette page.
+securesocial.verificationRequired=Vous devez avoir enregistré une adresse e-mail validée pour accéder à cette page.
 
 # Mails
 #

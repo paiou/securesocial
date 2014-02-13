@@ -72,7 +72,7 @@ object ProviderController extends Controller with SecureSocial
    *
    * @see Authorization
    */
-  def notAuthorized() = Action { implicit request =>
+  def notAuthorized() = UserAwareAction { implicit request =>
     import com.typesafe.plugin._
     Forbidden(use[TemplatesPlugin].getNotAuthorizedPage)
   }
