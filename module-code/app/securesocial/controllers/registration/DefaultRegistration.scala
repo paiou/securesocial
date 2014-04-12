@@ -68,6 +68,7 @@ object DefaultRegistration extends Controller {
 
   /** The redirect target of the handleStartSignUp action. */
   val onHandleStartSignUpGoTo = stringConfig("securesocial.onStartSignUpGoTo", RoutesHelper.login().url)
+  val onHandleStartSignUpGoToOpt = Play.current.configuration.getString("securesocial.onStartSignUpGoTo")
   /** The redirect target of the handleSignUp action. */
   val onHandleSignUpGoTo = stringConfig("securesocial.onSignUpGoTo", RoutesHelper.login().url)
   val onHandleSignUpGoToOpt = Play.current.configuration.getString("securesocial.onSignUpGoTo")

@@ -57,6 +57,7 @@ object FullRegistration extends Controller with securesocial.core.SecureSocial {
     Success,
     SignUpDone,
     onHandleStartSignUpGoTo,
+    onHandleStartSignUpGoToOpt,
     onHandleSignUpGoTo,
     onHandleSignUpGoToOpt,
     ThankYouCheckEmail,
@@ -67,7 +68,7 @@ object FullRegistration extends Controller with securesocial.core.SecureSocial {
     createToken,
     executeForToken
   }
-  
+
   val EmailAlreadyTaken = "securesocial.signup.emailAlreadyTaken"
 
   case class FullRegistrationInfo(userName: Option[String], firstName: String, lastName: String, email: String, password: String)
@@ -135,7 +136,7 @@ object FullRegistration extends Controller with securesocial.core.SecureSocial {
           BadRequest(use[TemplatesPlugin].getFullSignUpPage(errors))
         },
         info => {
-          UserService.findByEmailAndProvider(info.email, providerId) match {
+          val target = UserService.findByEmailAndProvider(info.email, providerId) match {
             case None =>
               val id = info.email
               val user = SocialUser(
@@ -152,19 +153,28 @@ object FullRegistration extends Controller with securesocial.core.SecureSocial {
               Events.fire(new SignUpEvent(user)).getOrElse(session)
               val token = createToken(info.email, isSignUp = true)
               Mailer.sendVerificationEmail(user, token._1)
+              if (UsernamePasswordProvider.signupSkipLogin && SecureSocial.minAccessLevel <= State.NotValidated) {
+                val eventSession = Events.fire(new SignUpEvent(user)).getOrElse(session)
+                val authResult = ProviderController.completeAuthentication(user, eventSession)
+                onHandleStartSignUpGoToOpt.map { targetUrl =>
+                  authResult.withHeaders(LOCATION -> targetUrl)
+                } getOrElse authResult
+              } else
+                Redirect(onHandleStartSignUpGoTo)
+
             case Some(alreadyRegisteredUser) =>
               Mailer.sendAlreadyRegisteredEmail(alreadyRegisteredUser)
+              Redirect(onHandleStartSignUpGoTo)
           }
-          Redirect(onHandleStartSignUpGoTo).flashing(Success -> Messages(ThankYouCheckEmail), Email -> info.email)
-        }
-      )
+          target.flashing(Success -> Messages(ThankYouCheckEmail), Email -> info.email)
+        })
     }
     else NotFound(views.html.defaultpages.notFound.render(request, None))
   }
 
   def signUpVerification(token: String) = UserAwareAction { implicit request =>
     if (registrationEnabled) {
- 
+
       def markAsActive(user: Identity) = {
         val updated = UserService.save(SocialUser(user).copy(state = State.ValidEmail))
         Mailer.sendWelcomeEmail(updated)
